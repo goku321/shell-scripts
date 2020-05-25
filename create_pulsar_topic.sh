@@ -23,7 +23,8 @@ create_namespace() {
 create_partitioned_topic() {
     echo $1 $2 $3 $4 $5
     $1 topics create-partitioned-topic \
-    persistent://$2/$3/$4 --partitions $5
+    persistent://$2/$3/$4 --partitions $5 \
+    --brokerDeleteInactiveTopicsEnabled false
 }
 
 create_non_partitioned_topic() {
@@ -33,10 +34,11 @@ create_non_partitioned_topic() {
 create_topic() {
     echo "creating topic"
     if [ $# -eq 5 ]; then
-        if [ $5 -eq "^[0-9]+$" ]; then
+        if [[ $5 =~ ^[0-9]+$ ]]; then
             create_partitioned_topic "$@"
             return $?
         else
+            usage "invalid argument - $5"
             return 2
         fi
     else
@@ -47,13 +49,21 @@ create_topic() {
 }
 
 usage() {
-    echo "error: not enough arguments"
+    echo "error: $1"
     echo "Usage: $0 binary-path tenant namespace topic [number-of-partitions]" >&2
+    echo "Optons: \
+
+            binary-path           - path to pulsar directory that contains the binaries.
+            tenant                - valid tenant name.
+            namespace             - valid namespace name.
+            topic                 - valid topic name.
+            number-of-partitions  - number of partitions (integer)
+        "
 }
 
 # main
 if [ $# -lt 4 ]; then
-    usage
+    usage "not enough arguments"
     exit 1
 fi
 
@@ -67,19 +77,19 @@ fi
 # pulsar-admin command
 cmd="$1/$BINARY"
 
-create_tenant "$cmd" "$2"
-if [ ! $? -eq 0 ]; then
-    echo "error: failed to create tenant"
-    exit 1
-fi
+# create_tenant "$cmd" "$2"
+# if [ ! $? -eq 0 ]; then
+#     echo "error: failed to create tenant"
+#     exit 1
+# fi
 
-create_namespace "$cmd" "$2" "$3"
-if [ ! $? -eq 0 ]; then
-    echo "error: failed to create namespace"
-    exit 1
-fi
+# create_namespace "$cmd" "$2" "$3"
+# if [ ! $? -eq 0 ]; then
+#     echo "error: failed to create namespace"
+#     exit 1
+# fi
 
-create_topic "$cmd" "$2" "$3" "$4" "$5"
+create_topic "$cmd" ${@:2}
 if [ ! $? -eq 0 ]; then
     echo "error: failed to create topic"
     exit 1
