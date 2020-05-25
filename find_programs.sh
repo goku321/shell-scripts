@@ -7,15 +7,17 @@ in_path() {
     oldIFS=$IFS
     IFS=":"
 
-for dir in "$path"
-do
-    if [ -x $dir/$cmd ]; then
-        res=0
-    fi
-done
+    for directory in "$path"
+    do
+    echo $directory
+        if [ -x $directory/$cmd ] ; then
+            echo $directory/$cmd
+            res=0
+        fi
+    done
 
-IFS=$oldIFS
-return $result
+    IFS=$oldIFS
+    return $result
 }
 
 checkForCmdInPath() {
