@@ -21,11 +21,29 @@ create_namespace() {
 }
 
 create_partitioned_topic() {
-    echo "create topic"
+    echo $1 $2 $3 $4 $5
+    $1 topics create-partitioned-topic \
+    persistent://$2/$3/$4 --partitions $5
+}
+
+create_non_partitioned_topic() {
+    echo $1 $2 $3 $4
 }
 
 create_topic() {
     echo "creating topic"
+    if [ $# -eq 5 ]; then
+        if [ $5 -eq "^[0-9]+$" ]; then
+            create_partitioned_topic "$@"
+            return $?
+        else
+            return 2
+        fi
+    else
+        create_non_partitioned_topic "$@"
+        return $?
+    fi
+
 }
 
 usage() {
@@ -55,13 +73,13 @@ if [ ! $? -eq 0 ]; then
     exit 1
 fi
 
-create_namespace "$2" "$3"
+create_namespace "$cmd" "$2" "$3"
 if [ ! $? -eq 0 ]; then
     echo "error: failed to create namespace"
     exit 1
 fi
 
-create_topic "$2" "$3" "$4" "$5"
+create_topic "$cmd" "$2" "$3" "$4" "$5"
 if [ ! $? -eq 0 ]; then
     echo "error: failed to create topic"
     exit 1
