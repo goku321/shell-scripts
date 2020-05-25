@@ -91,11 +91,11 @@ if [ ! $? -eq 0 ]; then
     exit 1
 fi
 
-# create_tenant "$cmd" "$2"
-# if [ ! $? -eq 0 ]; then
-#     echo "error: failed to create tenant - $2"
-#     exit 1
-# fi
+create_tenant "$cmd" "$2"
+if [ ! $? -eq 0 ]; then
+    echo "error: failed to create tenant - $2"
+    exit 1
+fi
 
 create_namespace "$cmd" "$2" "$3"
 if [ ! $? -eq 0 ]; then
