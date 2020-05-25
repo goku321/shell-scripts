@@ -17,22 +17,22 @@ create_tenant() {
 
 create_namespace() {
     echo "creating namespace..."
-    $1 namespaces create $2/$3
+    $1 namespaces create $2/$3 --brokerDeleteInactiveTopicsEnabled false
+    return $?
 }
 
 create_partitioned_topic() {
-    echo $1 $2 $3 $4 $5
     $1 topics create-partitioned-topic \
-    persistent://$2/$3/$4 --partitions $5 \
-    --brokerDeleteInactiveTopicsEnabled false
+        persistent://$2/$3/$4 --partitions $5
 }
 
 create_non_partitioned_topic() {
-    echo $1 $2 $3 $4
+    $1 topics create-partitioned-topic \
+        persistent://$2/$3/$4
 }
 
 create_topic() {
-    echo "creating topic"
+    echo "creating topic..."
     if [ $# -eq 5 ]; then
         if [[ $5 =~ ^[0-9]+$ ]]; then
             create_partitioned_topic "$@"
@@ -46,6 +46,14 @@ create_topic() {
         return $?
     fi
 
+}
+
+update_broker_configuration() {
+    $1 brokers update-dynamic-config \
+        --config $2 \
+        --value $3
+    
+    return $?
 }
 
 usage() {
@@ -77,20 +85,28 @@ fi
 # pulsar-admin command
 cmd="$1/$BINARY"
 
+update_broker_configuration $cmd "brokerDeleteInactiveTopicsEnabled" "false"
+if [ ! $? -eq 0 ]; then
+    echo "error: failed to update broker configuration"
+    exit 1
+fi
+
 # create_tenant "$cmd" "$2"
 # if [ ! $? -eq 0 ]; then
-#     echo "error: failed to create tenant"
+#     echo "error: failed to create tenant - $2"
 #     exit 1
 # fi
 
-# create_namespace "$cmd" "$2" "$3"
-# if [ ! $? -eq 0 ]; then
-#     echo "error: failed to create namespace"
-#     exit 1
-# fi
+create_namespace "$cmd" "$2" "$3"
+if [ ! $? -eq 0 ]; then
+    echo "error: failed to create namespace - $2/$3"
+    exit 1
+fi
 
 create_topic "$cmd" ${@:2}
 if [ ! $? -eq 0 ]; then
-    echo "error: failed to create topic"
+    echo "error: failed to create topic - $2/$3/$4"
     exit 1
 fi
+
+echo "topic created successfully!"
