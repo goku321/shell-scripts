@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BINARY="pulsar-admin"
+ADMIN_URL="http://10.0.2.100:8080"
 
 validate_binary_path() {
     if [ -x $1/$BINARY ]; then
@@ -11,23 +12,37 @@ validate_binary_path() {
 
 create_tenant() {
     echo "creating tenant..."
-    $1 tenants create $2
+
+    # check if the tenant already exists.
+    $1 --admin-url $ADMIN_URL tenants list | grep ^\"$2\"$
+    if [ $? -eq 0 ]; then
+        return 0
+    fi
+    
+    $1 --admin-url $ADMIN_URL tenants create $2
     return $?
 }
 
 create_namespace() {
     echo "creating namespace..."
-    $1 namespaces create $2/$3 --brokerDeleteInactiveTopicsEnabled false
+
+    # check if the namespace already exists.
+    $1 --admin-url $ADMIN_URL namespaces list $2 | grep ^\"$2/$3\"$
+    if [ $? -eq 0 ]; then
+        return 0
+    fi
+
+    $1 --admin-url $ADMIN_URL namespaces create $2/$3
     return $?
 }
 
 create_partitioned_topic() {
-    $1 topics create-partitioned-topic \
+    $1 --admin-url $ADMIN_URL topics create-partitioned-topic \
         persistent://$2/$3/$4 --partitions $5
 }
 
 create_non_partitioned_topic() {
-    $1 topics create-partitioned-topic \
+    $1 --admin-url $ADMIN_URL topics create \
         persistent://$2/$3/$4
 }
 
@@ -49,7 +64,7 @@ create_topic() {
 }
 
 update_broker_configuration() {
-    $1 brokers update-dynamic-config \
+    $1 --admin-url $ADMIN_URL brokers update-dynamic-config \
         --config $2 \
         --value $3
     
@@ -85,11 +100,11 @@ fi
 # pulsar-admin command
 cmd="$1/$BINARY"
 
-update_broker_configuration $cmd "brokerDeleteInactiveTopicsEnabled" "false"
-if [ ! $? -eq 0 ]; then
-    echo "error: failed to update broker configuration"
-    exit 1
-fi
+# update_broker_configuration $cmd "brokerDeleteInactiveTopicsEnabled" "false"
+# if [ ! $? -eq 0 ]; then
+#     echo "error: failed to update broker configuration"
+#     exit 1
+# fi
 
 create_tenant "$cmd" "$2"
 if [ ! $? -eq 0 ]; then
