@@ -71,6 +71,18 @@ update_broker_configuration() {
     return $?
 }
 
+set_retention_limit() {
+    if [ $# -lt 5 ]; then
+        usage "not enough arguments"
+        return 1
+    fi
+
+    $1 --admin-url $ADMIN_URL namespaces set-retention \
+        $2/$3 --size $4 --time $5
+    
+    return $?
+}
+
 usage() {
     echo "error: $1"
     echo "Usage: $0 binary-path tenant namespace topic [number-of-partitions]" >&2
@@ -115,6 +127,12 @@ fi
 create_namespace "$cmd" "$2" "$3"
 if [ ! $? -eq 0 ]; then
     echo "error: failed to create namespace - $2/$3"
+    exit 1
+fi
+
+set_retention_limit "$cmd" "$2" "$3" -1 -1
+if [ ! $? -eq 0 ]; then
+    echo "error: failed to set retention limits on - $2/$3"
     exit 1
 fi
 
