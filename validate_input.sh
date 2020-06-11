@@ -11,3 +11,15 @@ validAlphaNum() {
         return 1
     fi
 }
+
+/bin/echo -n "Enter input: "
+read input
+
+if ! validAlphaNum "$input"; then
+    echo "Please enter only letters and numbers." >&2
+    exit 1
+else
+    echo "Input is valid."
+fi
+
+exit 0
